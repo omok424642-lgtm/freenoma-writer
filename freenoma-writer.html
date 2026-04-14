@@ -434,7 +434,8 @@ JSON 형식으로만 답하세요. 설명 없이:
 
     const data = await response.json();
     const text = data.content[0].text;
-    const json = JSON.parse(text);
+    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+    const json = JSON.parse(cleaned);
     const titles = json.titles;
 
     statusEl.className = 'status-bar status-success';
