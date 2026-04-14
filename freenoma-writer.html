@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>프리노마 글 자동생성기</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: #f5f7fa;
+    color: #1a1a2e;
+    min-height: 100vh;
+  }
+
+  .header {
+    background: #002366;
+    color: white;
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header span { font-size: 13px; opacity: 0.7; }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px;
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 24px;
+  }
+
+  .panel {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e8ecf0;
+    padding: 24px;
+  }
+
+  .panel h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #002366;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f0f4f8;
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+    margin-bottom: 6px;
+  }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #dde3ea;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    color: #1a1a2e;
+    background: #fafbfc;
+    transition: border-color 0.2s;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #002366;
+    background: white;
+  }
+
+  input[type="password"] { letter-spacing: 2px; }
+
+  .btn {
+    width: 100%;
+    padding: 12px;
+    background: #002366;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: background 0.2s;
+    margin-top: 8px;
+  }
+
+  .btn:hover { background: #003399; }
+  .btn:disabled { background: #aaa; cursor: not-allowed; }
+
+  .btn-outline {
+    background: white;
+    color: #002366;
+    border: 2px solid #002366;
+    margin-top: 8px;
+  }
+
+  .btn-outline:hover { background: #f0f4ff; }
+
+  .status-bar {
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  .status-loading { background: #fff3cd; color: #856404; display: block; }
+  .status-success { background: #d4edda; color: #155724; display: block; }
+  .status-error { background: #f8d7da; color: #721c24; display: block; }
+
+  .titles-list { margin-top: 12px; }
+
+  .title-item {
+    padding: 12px 14px;
+    border: 1px solid #dde3ea;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    line-height: 1.5;
+  }
+
+  .title-item:hover { border-color: #002366; background: #f0f4ff; }
+  .title-item.selected { border-color: #002366; background: #e8f0ff; font-weight: 500; }
+
+  .output-area {
+    position: relative;
+  }
+
+  .output-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    justify-content: flex-end;
+  }
+
+  .btn-sm {
+    padding: 8px 16px;
+    font-size: 13px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .btn-copy {
+    background: #002366;
+    color: white;
+  }
+
+  .btn-copy:hover { background: #003399; }
+
+  .btn-clear {
+    background: #f0f4f8;
+    color: #555;
+  }
+
+  .btn-clear:hover { background: #e0e7ef; }
+
+  #htmlOutput {
+    width: 100%;
+    min-height: 500px;
+    padding: 16px;
+    border: 1px solid #dde3ea;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+    background: #fafbfc;
+    resize: vertical;
+    line-height: 1.6;
+    color: #333;
+  }
+
+  .posts-count {
+    font-size: 12px;
+    color: #888;
+    margin-top: 8px;
+  }
+
+  .api-key-note {
+    font-size: 11px;
+    color: #888;
+    margin-top: 6px;
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px solid #f0f4f8;
+    margin: 20px 0;
+  }
+
+  .step-badge {
+    display: inline-block;
+    background: #002366;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-bottom: 8px;
+  }
+
+  .spinning {
+    display: inline-block;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .preview-toggle {
+    background: #f0f4f8;
+    color: #333;
+  }
+
+  #preview {
+    display: none;
+    border: 1px solid #dde3ea;
+    border-radius: 8px;
+    padding: 24px;
+    background: white;
+    min-height: 300px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🖊 프리노마 글 자동생성기</h1>
+    <span>freenoma.com | 생활경제·생활건강·지원정책</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- 왼쪽 패널 -->
+  <div>
+    <div class="panel" style="margin-bottom: 24px;">
+      <h2>⚙️ API 설정</h2>
+      <div class="form-group">
+        <label>Claude API 키</label>
+        <input type="password" id="apiKey" placeholder="sk-ant-..." />
+        <p class="api-key-note">* 브라우저에만 저장되며 외부로 전송되지 않습니다</p>
+      </div>
+      <button class="btn btn-outline" onclick="saveApiKey()">API 키 저장</button>
+    </div>
+
+    <div class="panel">
+      <h2>✍️ 글 작성 설정</h2>
+
+      <div class="step-badge">STEP 1</div>
+      <div class="form-group">
+        <label>카테고리</label>
+        <select id="category">
+          <option value="생활건강">생활건강</option>
+          <option value="생활경제">생활경제</option>
+          <option value="지원정책">지원정책</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>키워드</label>
+        <input type="text" id="keyword" placeholder="예: 갱년기, 재테크, 임플란트 지원" />
+      </div>
+
+      <button class="btn" onclick="getTitles()" id="btnTitles">🔍 틈새 제목 추천받기</button>
+
+      <hr class="divider">
+
+      <div class="step-badge">STEP 2</div>
+      <p style="font-size: 13px; color: #666; margin-bottom: 12px;">추천된 제목 중 하나를 선택하세요</p>
+      <div id="statusTitles" class="status-bar"></div>
+      <div id="titlesList" class="titles-list"></div>
+
+      <hr class="divider">
+
+      <div class="step-badge">STEP 3</div>
+      <button class="btn" onclick="generatePost()" id="btnGenerate" disabled>📝 본문 자동 생성</button>
+    </div>
+  </div>
+
+  <!-- 오른쪽 패널 -->
+  <div class="panel output-area">
+    <h2>📄 생성된 HTML 본문</h2>
+
+    <div id="statusGenerate" class="status-bar"></div>
+
+    <div class="output-toolbar">
+      <button class="btn-sm btn-clear" onclick="clearOutput()">지우기</button>
+      <button class="btn-sm btn-copy preview-toggle" onclick="togglePreview()" id="btnPreview">미리보기</button>
+      <button class="btn-sm btn-copy" onclick="copyHtml()">📋 HTML 복사</button>
+    </div>
+
+    <textarea id="htmlOutput" placeholder="왼쪽에서 키워드를 입력하고 제목을 선택한 후 '본문 자동 생성' 버튼을 누르세요."></textarea>
+    <div id="preview"></div>
+
+    <div id="postsCount" class="posts-count"></div>
+  </div>
+
+</div>
+
+<script>
+let selectedTitle = '';
+let posts = [];
+
+// API 키 로드
+window.onload = function() {
+  const saved = localStorage.getItem('freenoma_api_key');
+  if (saved) document.getElementById('apiKey').value = saved;
+  loadPosts();
+};
+
+function saveApiKey() {
+  const key = document.getElementById('apiKey').value.trim();
+  if (!key.startsWith('sk-ant-')) {
+    alert('올바른 Claude API 키를 입력해주세요. (sk-ant- 로 시작)');
+    return;
+  }
+  localStorage.setItem('freenoma_api_key', key);
+  alert('API 키가 저장되었습니다!');
+}
+
+// freenoma.com 글 목록 가져오기
+async function loadPosts() {
+  try {
+    const res = await fetch('https://freenoma.com/wp-json/wp/v2/posts?per_page=100&_fields=id,title,link,categories,excerpt', {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!res.ok) throw new Error('API 오류');
+    posts = await res.json();
+    document.getElementById('postsCount').textContent = `✓ freenoma.com 글 ${posts.length}개 로드 완료 (내부링크 자동 연결)`;
+  } catch(e) {
+    document.getElementById('postsCount').textContent = '⚠ 글 목록 로드 실패 - 내부링크 없이 생성됩니다';
+  }
+}
+
+// 관련 내부링크 찾기
+function getRelatedLinks(keyword, category, count = 3) {
+  if (!posts.length) return [];
+  const kw = keyword.toLowerCase();
+  const scored = posts.map(p => {
+    const title = p.title.rendered.toLowerCase();
+    const excerpt = (p.excerpt?.rendered || '').replace(/<[^>]+>/g, '').toLowerCase();
+    let score = 0;
+    if (title.includes(kw)) score += 10;
+    kw.split(' ').forEach(w => { if (w.length > 1 && title.includes(w)) score += 3; });
+    if (excerpt.includes(kw)) score += 2;
+    return { ...p, score };
+  });
+  return scored
+    .filter(p => p.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, count)
+    .map(p => ({ title: p.title.rendered, url: p.link }));
+}
+
+// STEP 1: 제목 추천
+async function getTitles() {
+  const apiKey = localStorage.getItem('freenoma_api_key');
+  if (!apiKey) { alert('먼저 API 키를 저장해주세요.'); return; }
+
+  const keyword = document.getElementById('keyword').value.trim();
+  const category = document.getElementById('category').value;
+  if (!keyword) { alert('키워드를 입력해주세요.'); return; }
+
+  const btn = document.getElementById('btnTitles');
+  btn.disabled = true;
+  btn.textContent = '⏳ 분석 중...';
+
+  const statusEl = document.getElementById('statusTitles');
+  statusEl.className = 'status-bar status-loading';
+  statusEl.textContent = '2개월차 블로그 체급에 맞는 틈새 키워드 분석 중...';
+
+  document.getElementById('titlesList').innerHTML = '';
+  document.getElementById('btnGenerate').disabled = true;
+  selectedTitle = '';
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: `당신은 한국 워드프레스 SEO 전문가입니다.
+
+블로그 정보:
+- 운영기간: 2개월차 신규 블로그
+- 도메인: freenoma.com
+- 카테고리: ${category}
+- 주요 키워드: ${keyword}
+
+이 블로그의 체급(도메인 나이, 백링크 없음, 신규)에 맞는 틈새 롱테일 키워드 제목 3개를 추천해주세요.
+
+조건:
+- 대형 언론사, 정부기관, 대형 블로그와 경쟁하지 않는 틈새 키워드
+- 검색량은 적당하되 경쟁이 낮은 황금 키워드
+- 50대 워킹맘이 쓰는 친근한 어조
+- 질문형 또는 구체적 수치/상황이 담긴 제목
+- 2026년 최신 트렌드 반영
+
+JSON 형식으로만 답하세요. 설명 없이:
+{"titles": ["제목1", "제목2", "제목3"]}`
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content[0].text;
+    const json = JSON.parse(text);
+    const titles = json.titles;
+
+    statusEl.className = 'status-bar status-success';
+    statusEl.textContent = '✓ 틈새 키워드 제목 3개 추천 완료! 하나를 선택하세요.';
+
+    const listEl = document.getElementById('titlesList');
+    listEl.innerHTML = titles.map((t, i) => `
+      <div class="title-item" onclick="selectTitle(this, '${t.replace(/'/g, "\\'")}')">
+        ${i+1}. ${t}
+      </div>
+    `).join('');
+
+  } catch(e) {
+    statusEl.className = 'status-bar status-error';
+    statusEl.textContent = '오류: ' + e.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '🔍 틈새 제목 추천받기';
+}
+
+function selectTitle(el, title) {
+  document.querySelectorAll('.title-item').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedTitle = title;
+  document.getElementById('btnGenerate').disabled = false;
+}
+
+// STEP 2: 본문 생성
+async function generatePost() {
+  const apiKey = localStorage.getItem('freenoma_api_key');
+  if (!apiKey) { alert('먼저 API 키를 저장해주세요.'); return; }
+  if (!selectedTitle) { alert('제목을 선택해주세요.'); return; }
+
+  const keyword = document.getElementById('keyword').value.trim();
+  const category = document.getElementById('category').value;
+  const relatedLinks = getRelatedLinks(keyword, category);
+
+  const btn = document.getElementById('btnGenerate');
+  btn.disabled = true;
+  btn.textContent = '⏳ 본문 생성 중... (30~60초 소요)';
+
+  const statusEl = document.getElementById('statusGenerate');
+  statusEl.className = 'status-bar status-loading';
+  statusEl.textContent = '지침서 v4.7 기준으로 본문 생성 중입니다. 잠시만 기다려주세요...';
+
+  const internalLinksText = relatedLinks.length > 0
+    ? relatedLinks.map(l => `- ${l.title}: ${l.url}`).join('\n')
+    : '없음 (글 목록 로드 실패)';
+
+  const today = '2026.04.14';
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 4000,
+        messages: [{
+          role: 'user',
+          content: `당신은 프리노마(freenoma.com) 블로그의 AI 수석 비서 워프(Warp)입니다.
+
+## 운영자 정보
+- 1972년생 워킹맘, 50대
+- 건강·경제·정책을 공부하며 기록하는 친근한 실전 전문가
+- 어조: 품격 있는 구어체(80%) + 격식체(20%)
+
+## 작성 요청
+- 제목: ${selectedTitle}
+- 카테고리: ${category}
+- 키워드: ${keyword}
+- 오늘 날짜: ${today}
+
+## 내부링크 후보 (본문에 자연스럽게 삽입)
+${internalLinksText}
+
+## 출력 규칙 (반드시 준수)
+1. 워드프레스 텍스트(코드) 에디터용 HTML 코드 블록으로만 출력
+2. 공백 제외 3,000자 이상
+3. 수치 데이터는 반드시 <table> 태그로 시각화
+4. 이미지는 <figure><img><figcaption> 구조로 삽입
+   - 이미지 경로: https://freenoma.com/wp-content/uploads/2026/04/파일명.webp (가상)
+   - 표(Table)가 있는 소제목 아래에는 이미지 삽입 금지
+5. 내부링크: 문맥 속 자연스럽게 연결 (단순 나열 금지)
+6. 인사이트 박스 포함
+7. 금지 화법: "오늘 이 글에서는", "알아보겠습니다", "반갑습니다"
+8. 1인칭 시점 유지 ("프리노마의~" 3인칭 금지)
+9. 출처 명시: (출처: OO부, ${today})
+10. FAQ 섹션 포함 (3개 질문)
+
+## 스타일 가이드 (Navy #002366)
+- 핵심요약 박스: <blockquote style="border-left: 5px solid #002366; background: #f4f7fa; padding: 20px;">
+- 인사이트 박스: <div style="background-color: #f0f4f8; border-left: 8px solid #002366; padding: 25px; margin: 30px 0; border-radius: 5px;">
+- CTA 버튼: <div style="text-align: center; margin: 30px 0;"><a href="..." style="background-color: #002366; color: white; padding: 15px 30px; border-radius: 50px; text-decoration: none; font-weight: bold;">
+
+## 3층 구조 서술
+[현상 → 배경 분석 → 실질적 영향] 순으로 깊이 있게
+
+## 세대별 시뮬레이션 포함
+2030 / 4050 / 6070 세대별 가상 수치 대입
+
+지금 바로 HTML 코드만 출력하세요. 설명이나 마크다운 없이 순수 HTML만:`
+        }]
+      })
+    });
+
+    const data = await response.json();
+    let html = data.content[0].text;
+    html = html.replace(/```html\n?/g, '').replace(/```\n?/g, '').trim();
+
+    document.getElementById('htmlOutput').value = html;
+    document.getElementById('htmlOutput').style.display = 'block';
+    document.getElementById('preview').style.display = 'none';
+    document.getElementById('btnPreview').textContent = '미리보기';
+
+    statusEl.className = 'status-bar status-success';
+    statusEl.textContent = `✓ 본문 생성 완료! 오른쪽 상단 "HTML 복사" 버튼으로 복사 후 워드프레스에 붙여넣으세요.`;
+
+  } catch(e) {
+    statusEl.className = 'status-bar status-error';
+    statusEl.textContent = '오류: ' + e.message;
+  }
+
+  btn.disabled = false;
+  btn.textContent = '📝 본문 자동 생성';
+}
+
+function copyHtml() {
+  const html = document.getElementById('htmlOutput').value;
+  if (!html) { alert('생성된 HTML이 없습니다.'); return; }
+  navigator.clipboard.writeText(html).then(() => {
+    alert('HTML이 클립보드에 복사되었습니다!\n워드프레스 텍스트(코드) 에디터에 붙여넣으세요.');
+  });
+}
+
+function clearOutput() {
+  document.getElementById('htmlOutput').value = '';
+  document.getElementById('preview').innerHTML = '';
+  document.getElementById('preview').style.display = 'none';
+  document.getElementById('statusGenerate').className = 'status-bar';
+  document.getElementById('btnPreview').textContent = '미리보기';
+}
+
+function togglePreview() {
+  const textarea = document.getElementById('htmlOutput');
+  const preview = document.getElementById('preview');
+  const btn = document.getElementById('btnPreview');
+
+  if (preview.style.display === 'none') {
+    preview.innerHTML = textarea.value;
+    preview.style.display = 'block';
+    textarea.style.display = 'none';
+    btn.textContent = 'HTML 보기';
+  } else {
+    preview.style.display = 'none';
+    textarea.style.display = 'block';
+    btn.textContent = '미리보기';
+  }
+}
+</script>
+</body>
+</html>
