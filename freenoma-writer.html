@@ -499,7 +499,7 @@ async function generatePost() {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 8000,
+        max_tokens: 16000,
         messages: [{
           role: 'user',
           content: `당신은 프리노마(freenoma.com) 블로그의 AI 수석 비서 워프(Warp)입니다.
@@ -520,13 +520,13 @@ ${internalLinksText}
 
 ## 출력 규칙 (반드시 준수)
 1. 워드프레스 텍스트(코드) 에디터용 HTML 코드 블록으로만 출력
-2. 공백 제외 3,000자 이상
+2. 공백 제외 2,500자 내외 (너무 길면 안 됨)
 3. 수치 데이터는 반드시 <table> 태그로 시각화
 4. 이미지는 <figure><img><figcaption> 구조로 삽입
    - 이미지 경로: https://freenoma.com/wp-content/uploads/2026/04/파일명.webp (가상)
    - 표(Table)가 있는 소제목 아래에는 이미지 삽입 금지
 5. 내부링크: 문맥 속 자연스럽게 연결 (단순 나열 금지)
-6. 인사이트 박스 포함
+6. 인사이트 박스 1개 포함
 7. 금지 화법: "오늘 이 글에서는", "알아보겠습니다", "반갑습니다"
 8. 1인칭 시점 유지 ("프리노마의~" 3인칭 금지)
 9. 출처 명시: (출처: OO부, ${today})
