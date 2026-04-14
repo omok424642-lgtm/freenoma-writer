@@ -308,6 +308,7 @@
     <div class="output-toolbar">
       <button class="btn-sm btn-clear" onclick="clearOutput()">지우기</button>
       <button class="btn-sm btn-copy preview-toggle" onclick="togglePreview()" id="btnPreview">미리보기</button>
+      <button class="btn-sm btn-copy" onclick="downloadHtml()" style="background:#28a745;">💾 파일저장</button>
       <button class="btn-sm btn-copy" onclick="copyHtml()">📋 HTML 복사</button>
     </div>
 
@@ -315,6 +316,12 @@
     <div id="preview"></div>
 
     <div id="postsCount" class="posts-count"></div>
+  </div>
+
+  <!-- 저장된 글 목록 패널 -->
+  <div class="panel" style="grid-column: 1 / -1; margin-top: 0;">
+    <h2>📂 저장된 글 목록 (최대 20개, 브라우저 자동저장)</h2>
+    <div id="savedList"><p style="font-size:13px;color:#aaa;">아직 저장된 글이 없습니다. 글을 생성하면 자동으로 저장됩니다.</p></div>
   </div>
 
 </div>
@@ -328,6 +335,7 @@ window.onload = function() {
   const saved = localStorage.getItem('freenoma_api_key');
   if (saved) document.getElementById('apiKey').value = saved;
   loadPosts();
+  renderSavedList();
 };
 
 function saveApiKey() {
@@ -557,8 +565,11 @@ ${internalLinksText}
     document.getElementById('preview').style.display = 'none';
     document.getElementById('btnPreview').textContent = '미리보기';
 
+    saveToStorage(selectedTitle, html);
+    renderSavedList();
+
     statusEl.className = 'status-bar status-success';
-    statusEl.textContent = `✓ 본문 생성 완료! 오른쪽 상단 "HTML 복사" 버튼으로 복사 후 워드프레스에 붙여넣으세요.`;
+    statusEl.textContent = `✓ 본문 생성 완료! 브라우저에 자동 저장됐습니다.`;
 
   } catch(e) {
     statusEl.className = 'status-bar status-error';
@@ -575,6 +586,90 @@ function copyHtml() {
   navigator.clipboard.writeText(html).then(() => {
     alert('HTML이 클립보드에 복사되었습니다!\n워드프레스 텍스트(코드) 에디터에 붙여넣으세요.');
   });
+}
+
+function downloadHtml() {
+  const html = document.getElementById('htmlOutput').value;
+  if (!html) { alert('생성된 HTML이 없습니다.'); return; }
+  const title = selectedTitle || '프리노마_글';
+  const filename = title.replace(/[^가-힣a-zA-Z0-9]/g, '_').slice(0, 30) + '.html';
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function saveToStorage(title, html) {
+  const saved = JSON.parse(localStorage.getItem('freenoma_posts') || '[]');
+  const newPost = {
+    id: Date.now(),
+    title: title,
+    html: html,
+    date: new Date().toLocaleDateString('ko-KR'),
+    category: document.getElementById('category').value
+  };
+  saved.unshift(newPost);
+  if (saved.length > 20) saved.pop();
+  localStorage.setItem('freenoma_posts', JSON.stringify(saved));
+}
+
+function renderSavedList() {
+  const saved = JSON.parse(localStorage.getItem('freenoma_posts') || '[]');
+  const listEl = document.getElementById('savedList');
+  if (!listEl) return;
+  if (saved.length === 0) {
+    listEl.innerHTML = '<p style="font-size:13px;color:#aaa;">저장된 글이 없습니다.</p>';
+    return;
+  }
+  listEl.innerHTML = saved.map(p => `
+    <div style="padding:10px 12px;border:1px solid #e8ecf0;border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all 0.2s;" 
+         onmouseover="this.style.borderColor='#002366'" 
+         onmouseout="this.style.borderColor='#e8ecf0'">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+        <div onclick="loadPost(${p.id})" style="flex:1;">
+          <div style="font-size:13px;font-weight:500;color:#1a1a2e;line-height:1.4;">${p.title}</div>
+          <div style="font-size:11px;color:#aaa;margin-top:3px;">${p.category} · ${p.date}</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-shrink:0;">
+          <button onclick="downloadSaved(${p.id})" style="padding:4px 8px;font-size:11px;border:1px solid #dde3ea;border-radius:4px;background:white;cursor:pointer;" title="다운로드">💾</button>
+          <button onclick="deleteSaved(${p.id})" style="padding:4px 8px;font-size:11px;border:1px solid #dde3ea;border-radius:4px;background:white;cursor:pointer;color:#e53e3e;" title="삭제">✕</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function loadPost(id) {
+  const saved = JSON.parse(localStorage.getItem('freenoma_posts') || '[]');
+  const post = saved.find(p => p.id === id);
+  if (!post) return;
+  document.getElementById('htmlOutput').value = post.html;
+  document.getElementById('htmlOutput').style.display = 'block';
+  document.getElementById('preview').style.display = 'none';
+  document.getElementById('btnPreview').textContent = '미리보기';
+  selectedTitle = post.title;
+  alert(`"${post.title}" 글을 불러왔습니다.`);
+}
+
+function downloadSaved(id) {
+  const saved = JSON.parse(localStorage.getItem('freenoma_posts') || '[]');
+  const post = saved.find(p => p.id === id);
+  if (!post) return;
+  const filename = post.title.replace(/[^가-힣a-zA-Z0-9]/g, '_').slice(0, 30) + '.html';
+  const blob = new Blob([post.html], { type: 'text/html;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+function deleteSaved(id) {
+  if (!confirm('이 글을 삭제할까요?')) return;
+  const saved = JSON.parse(localStorage.getItem('freenoma_posts') || '[]');
+  const updated = saved.filter(p => p.id !== id);
+  localStorage.setItem('freenoma_posts', JSON.stringify(updated));
+  renderSavedList();
 }
 
 function clearOutput() {
